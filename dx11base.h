@@ -3,6 +3,7 @@
 #include <d3d11.h>
 #include <d3dx11.h>
 #include <DxErr.h>
+#include <D3Dcompiler.h>
 
 class Dx11Base
 {
@@ -17,6 +18,9 @@ public:
 	virtual void UnLoadContent();
 	virtual void Update(float dt) = 0;
 	virtual void Render() = 0;
+
+	//编译着色器
+	bool CompileD3DShader(LPCWSTR filePath, LPCSTR entry, LPCSTR shaderModel, ID3DBlob** buffer);
 
 protected:
 	HINSTANCE hInstance_;						 //实例

@@ -6,6 +6,12 @@
 //dxerr.lib 是用旧版 CRT 编译的，会引用新版 UCRT 已移除的 __vsnwprintf，
 //需要由 legacy_stdio_definitions.lib 提供，否则链接阶段仍会报 LNK2019/LNK1120
 #pragma comment(lib, "legacy_stdio_definitions.lib")
+//D3DX11CompileFromFile 的实现在 d3dx11.lib（Debug 版为 d3dx11d.lib）中
+#if defined(DEBUG) || defined(_DEBUG)
+#pragma comment(lib, "d3dx11d.lib")
+#else
+#pragma comment(lib, "d3dx11.lib")
+#endif
 
 Dx11Base::Dx11Base():driverType_(D3D_DRIVER_TYPE_NULL), featureLevel_(D3D_FEATURE_LEVEL_11_0),
 					d3dDevice_(0), d3dContext_(0), swapChain_(0), backBufferTarget_(0)
@@ -142,4 +148,32 @@ void Dx11Base::Shutdown()
 	d3dDevice_ = 0;
 	d3dContext_ = 0;
 	swapChain_ = 0;
+}
+
+bool Dx11Base::CompileD3DShader(LPCWSTR filePath, LPCSTR entry, LPCSTR shaderModel, ID3DBlob** buffer)
+{
+	DWORD shaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+
+#if defined (DEBUG)|| defined(_DEBUG)
+	shaderFlags |= D3DCOMPILE_DEBUG;
+#endif
+
+	ID3DBlob* errorBuffer = 0;
+	HRESULT result;
+	result = D3DX11CompileFromFile(filePath, 0, 0, entry, shaderModel, shaderFlags, 0, 0, buffer, &errorBuffer, 0);
+
+	if (FAILED(result))
+	{
+		if (errorBuffer != 0)
+		{
+			OutputDebugStringA((char*)errorBuffer->GetBufferPointer());
+			errorBuffer->Release();
+		}
+		return false;
+	}
+
+	if (errorBuffer != 0)
+		errorBuffer->Release();
+
+	return true;
 }
