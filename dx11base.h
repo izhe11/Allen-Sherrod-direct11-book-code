@@ -4,6 +4,11 @@
 #include <d3dx11.h>
 #include <DxErr.h>
 #include <D3Dcompiler.h>
+#include <xnamath.h>
+#include <Dinput.h>
+
+#define KEYDOWN(name,key) (name[key]&0x80)
+#define BUTTONDOWN(name,key) (name.rgbButtons[key]&0x80)
 
 class Dx11Base
 {
@@ -31,5 +36,13 @@ protected:
 	ID3D11DeviceContext* d3dContext_;			 //环境
 	IDXGISwapChain* swapChain_;					 //交换链
 	ID3D11RenderTargetView* backBufferTarget_;   //渲染窗口视图
+	LPDIRECTINPUT8 directInput_;
+	LPDIRECTINPUTDEVICE8 keyboardDevice_;        //键盘输入设备
+	LPDIRECTINPUTDEVICE8 mouseDevice_;           //鼠标输入设备
 
+	char keyboardKeys_[256];                     //按键状态
+	char prevKeyboardKeys_[256];                 //上一次按键状态
+	int mousePosX_;                             //鼠标x坐标
+	int mousePosY_;                             //鼠标y坐标
+	int mouseWheel_;                            //鼠标滚轮
 };

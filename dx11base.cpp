@@ -13,6 +13,8 @@
 #pragma comment(lib, "d3dx11.lib")
 #endif
 
+#pragma comment(lib,"dinput8.lib")
+
 Dx11Base::Dx11Base():driverType_(D3D_DRIVER_TYPE_NULL), featureLevel_(D3D_FEATURE_LEVEL_11_0),
 					d3dDevice_(0), d3dContext_(0), swapChain_(0), backBufferTarget_(0)
 {
@@ -118,6 +120,59 @@ bool Dx11Base::Initialize(HINSTANCE hInstance, HWND hwnd)
 
 	d3dContext_->RSSetViewports(1, &viewport);
 
+	//键盘设备初始化
+	ZeroMemory(keyboardKeys_, sizeof(keyboardKeys_));
+	ZeroMemory(prevKeyboardKeys_, sizeof(prevKeyboardKeys_));
+	result = DirectInput8Create(hInstance_, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput_, 0);
+	if (FAILED(result))
+	{
+		return false;
+	}
+
+	result = directInput_->CreateDevice(GUID_SysKeyboard, &keyboardDevice_, 0);
+	if (FAILED(result))
+	{
+		return false;
+	}
+	result = keyboardDevice_->SetDataFormat(&c_dfDIKeyboard);
+	if (FAILED(result))
+	{
+		return false;
+	}
+	result = keyboardDevice_->SetCooperativeLevel(hwnd_, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	if (FAILED(result))
+	{
+		return false;
+	}
+	result = keyboardDevice_->Acquire();
+	if (FAILED(result))
+	{
+		return false;
+	}
+
+	//初始化鼠标设备
+	mousePosX_ = mousePosY_ = mouseWheel_ = 0;
+	result = directInput_->CreateDevice(GUID_SysMouse, &mouseDevice_, 0);
+	if (FAILED(result))
+	{
+		return false;
+	}
+	result = mouseDevice_->SetDataFormat(&c_dfDIMouse);
+	if (FAILED(result))
+	{
+		return false;
+	}
+	result = mouseDevice_->SetCooperativeLevel(hwnd_, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	if (FAILED(result))
+	{
+		return false;
+	}
+	result = mouseDevice_->Acquire();
+	if (FAILED(result))
+	{
+		return false;
+	}
+
 	return LoadContent();
 }
 
@@ -143,11 +198,25 @@ void Dx11Base::Shutdown()
 		d3dContext_->Release();
 	if (swapChain_)
 		swapChain_->Release();
-
+	if (keyboardDevice_)
+	{
+		keyboardDevice_->Unacquire();
+		keyboardDevice_->Release();
+	}
+	if (mouseDevice_)
+	{
+		mouseDevice_->Unacquire();
+		mouseDevice_->Release();
+	}
+	if (directInput_)
+		directInput_->Release();
 	backBufferTarget_ = 0;
 	d3dDevice_ = 0;
 	d3dContext_ = 0;
 	swapChain_ = 0;
+	keyboardDevice_ = 0;
+	mouseDevice_ = 0;
+	directInput_ = 0;
 }
 
 bool Dx11Base::CompileD3DShader(LPCWSTR filePath, LPCSTR entry, LPCSTR shaderModel, ID3DBlob** buffer)
