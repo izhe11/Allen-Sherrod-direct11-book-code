@@ -39,6 +39,8 @@ protected:
 	LPDIRECTINPUT8 directInput_;
 	LPDIRECTINPUTDEVICE8 keyboardDevice_;        //键盘输入设备
 	LPDIRECTINPUTDEVICE8 mouseDevice_;           //鼠标输入设备
+	ID3D11Texture2D* depthTexture_;
+	ID3D11DepthStencilView* depthStencilView_;
 
 	char keyboardKeys_[256];                     //按键状态
 	char prevKeyboardKeys_[256];                 //上一次按键状态

@@ -173,6 +173,46 @@ bool Dx11Base::Initialize(HINSTANCE hInstance, HWND hwnd)
 		return false;
 	}
 
+	//创建2D贴图资源
+	D3D11_TEXTURE2D_DESC depthTexDesc;
+	ZeroMemory(&depthTexDesc, sizeof(depthTexDesc));
+	depthTexDesc.Width = width;
+	depthTexDesc.Height = height;
+	depthTexDesc.MipLevels = 1;
+	depthTexDesc.ArraySize = 1;
+	depthTexDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthTexDesc.SampleDesc.Count = 1;
+	depthTexDesc.SampleDesc.Quality = 0;
+	depthTexDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthTexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthTexDesc.CPUAccessFlags = 0;
+	depthTexDesc.MiscFlags = 0;
+
+	result = d3dDevice_->CreateTexture2D(&depthTexDesc, NULL, &depthTexture_);
+	if (FAILED(result))
+	{
+		DXTRACE_MSG(L"Failed to create the depth texture!");
+		return false;
+	}
+
+	//创建深度视图
+	D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
+	ZeroMemory(&descDSV, sizeof(descDSV));
+	descDSV.Format = depthTexDesc.Format;
+	descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	descDSV.Texture2D.MipSlice = 0;
+
+	result = d3dDevice_->CreateDepthStencilView(depthTexture_, &descDSV, &depthStencilView_);
+	if (FAILED(result))
+	{
+		DXTRACE_MSG(L"Failed to create the depth stencil target view!");
+		return false;
+	}
+	d3dContext_->OMSetRenderTargets(1, &backBufferTarget_, depthStencilView_);
+
+	//将视图固定到direct3D组件
+	d3dContext_->RSSetViewports(1, &viewport);
+
 	return LoadContent();
 }
 
@@ -210,6 +250,11 @@ void Dx11Base::Shutdown()
 	}
 	if (directInput_)
 		directInput_->Release();
+	if (depthTexture_)
+		depthTexture_->Release();
+	if (depthStencilView_)
+		depthStencilView_->Release();
+
 	backBufferTarget_ = 0;
 	d3dDevice_ = 0;
 	d3dContext_ = 0;
@@ -217,6 +262,8 @@ void Dx11Base::Shutdown()
 	keyboardDevice_ = 0;
 	mouseDevice_ = 0;
 	directInput_ = 0;
+	depthTexture_ = 0;
+	depthStencilView_ = 0;
 }
 
 bool Dx11Base::CompileD3DShader(LPCWSTR filePath, LPCSTR entry, LPCSTR shaderModel, ID3DBlob** buffer)
